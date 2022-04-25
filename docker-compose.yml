@@ -1,0 +1,34 @@
+version: "3.6"
+services:
+# Gitlab Runner
+  ## runner installer
+  registration-runner:
+    container_name: ${RUNNER_NAME}-register-container
+    image: gitlab/gitlab-runner:alpine
+    volumes:
+      - ./config/gitlab-runner:/etc/gitlab-runner
+    entrypoint: /bin/sh
+    command: -c "gitlab-runner register"
+    environment:
+      - REGISTER_NON_INTERACTIVE=true
+      - RUNNER_EXECUTOR=docker
+      - DOCKER_IMAGE=docker:latest
+      - DOCKER_PRIVILEGED=false
+      - DOCKER_PULL_POLICY=always
+      - DOCKER_VOLUMES=/var/run/docker.sock:/var/run/docker.sock
+      - CI_SERVER_URL=${GITLAB_URL}
+      - REGISTRATION_TOKEN=${GITLAB_REGISTRATION_TOKEN}
+      - RUNNER_TAG_LIST=${RUNNER_TAG_LIST}
+      - RUN_UNTAGGED=false
+      - RUNNER_NAME=${RUNNER_NAME}
+      - DESCRIPTION=run on docker 
+  ## runner up!
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine
+    container_name: ${RUNNER_NAME}
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/gitlab-runner:/etc/gitlab-runner
+    depends_on:
+      - registration-runner
